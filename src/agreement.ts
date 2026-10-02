@@ -42,11 +42,11 @@ export function defaultAgreementText(
 }
 
 /**
- * PR の作者に同意を求めなくてよいか。書き込み権限のある人 (author_association で判断する) と Bot は求めない。
- * author_association は GitHub の Webhook が付ける値 (OWNER、MEMBER、COLLABORATOR、CONTRIBUTOR、NONE など)
+ * PR の作者に同意を求めなくてよいか。Bot (Renovate など) だけ求めない。
+ * リポジトリの持ち主やメンバーにも、ほかの人と同じく、リポジトリごとに 1 回求める
  */
-export function isExempt(author: { readonly type: string; readonly association: string }): boolean {
-	return author.type === 'Bot' || ['OWNER', 'MEMBER', 'COLLABORATOR'].includes(author.association);
+export function isExempt(author: { readonly type: string }): boolean {
+	return author.type === 'Bot';
 }
 
 export function requestComment(login: string, repo: string, agreeUrl: string): string {
@@ -54,7 +54,7 @@ export function requestComment(login: string, repo: string, agreeUrl: string): s
 		MARKER,
 		`@${login} PR をありがとうございます。`,
 		'',
-		`${repo} では、外部の方から変更を受け取る前に、ライセンスへの同意をお願いしています (このリポジトリで 1 回です)。次のページで内容を確かめ、GitHub でログインして同意してください。同意すると、このコメントが書き換わり、検査「${STATUS_CONTEXT}」が通ります。`,
+		`${repo} では、変更を受け取る前に、ライセンスへの同意をお願いしています (このリポジトリで 1 回です)。次のページで内容を確かめ、GitHub でログインして同意してください。同意すると、このコメントが書き換わり、検査「${STATUS_CONTEXT}」が通ります。`,
 		'',
 		`- [ライセンスへの同意のページ](${agreeUrl})`,
 	].join('\n');

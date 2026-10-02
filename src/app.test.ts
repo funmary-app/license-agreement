@@ -118,7 +118,7 @@ describe('Webhook', () => {
 		expect(calls).toEqual([]);
 	});
 
-	it('外部の人がまだ同意していなければ、案内のコメントを送り、検査を「待ち」にして、同意のページへつなぐ', async () => {
+	it('まだ同意していなければ、案内のコメントを送り、検査を「待ち」にして、同意のページへつなぐ', async () => {
 		const { app, calls } = setup();
 		expect((await webhook(app, pullRequestEvent())).status).toBe(204);
 		const comment = calls.find((call) => call.method === 'upsertComment');
@@ -161,15 +161,18 @@ describe('Webhook', () => {
 		}
 	});
 
-	it('メンバーと Bot の PR は、同意を求めずに検査を通す', async () => {
-		for (const event of [
-			pullRequestEvent({ association: 'MEMBER' }),
-			pullRequestEvent({ type: 'Bot', association: 'NONE' }),
-		]) {
-			const { app, calls } = setup();
-			await webhook(app, event);
-			expect(calls.map((call) => call.method)).toEqual(['installationToken', 'setStatus']);
-		}
+	it('Bot の PR は、同意を求めずに検査を通す', async () => {
+		const { app, calls } = setup();
+		await webhook(app, pullRequestEvent({ type: 'Bot' }));
+		expect(calls.map((call) => call.method)).toEqual(['installationToken', 'setStatus']);
+	});
+
+	it('リポジトリの持ち主やメンバーの PR でも、まだ同意していなければ、同意を求める', async () => {
+		const { app, calls } = setup();
+		await webhook(app, pullRequestEvent({ association: 'OWNER' }));
+		expect(calls.find((call) => call.method === 'setStatus')?.args[2]).toMatchObject({
+			state: 'pending',
+		});
 	});
 
 	it('見張らないアクションとイベントでは、何もしない', async () => {
