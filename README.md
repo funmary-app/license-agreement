@@ -38,7 +38,7 @@ pnpm build:check    # Cloudflare に送らずに、組み立てられるかを�
 
 ## 最初の準備 (作者の操作)
 
-順番に行います。Worker の URL (`https://funmary-license-agreement.<アカウントのサブドメイン>.workers.dev`) は、1 で初めて反映したときに決まり、2 の GitHub App の設定で使います。
+順番に行います。Worker の URL (`https://license-agreement.<アカウントのサブドメイン>.workers.dev`) は、1 で初めて反映したときに決まり、2 の GitHub App の設定で使います。
 
 ### 1. Cloudflare (アカウント funmary)
 
