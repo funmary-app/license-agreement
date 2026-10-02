@@ -38,16 +38,11 @@ pnpm build:check    # Cloudflare に送らずに、組み立てられるかを�
 
 ## 最初の準備 (作者の操作)
 
-順番に行います。Worker の URL (`https://license-agreement.<アカウントのサブドメイン>.workers.dev`) は、1 で初めて反映したときに決まり、2 の GitHub App の設定で使います。
+順番に行います。`wrangler.jsonc` の `secrets.required` にある秘密の値がそろうまで、Worker は反映できません。そのため、GitHub App を先に作り、秘密の値を置いてから反映します。
 
-### 1. Cloudflare (アカウント funmary)
+Worker の URL は `https://license-agreement.<アカウントのサブドメイン>.workers.dev` です。サブドメインは、Cloudflare のダッシュボードの Workers & Pages で確かめられます。反映の前から URL は決まっているので、1 の GitHub App の設定にそのまま使えます。
 
-1. `pnpm exec wrangler login` でログインする
-2. `pnpm run deploy` で、Worker と D1 のマイグレーションを反映する。表示された URL を控える
-
-D1 は、初めての反映のときに Wrangler が作ります (`wrangler.jsonc` に `database_id` は書きません)。そのとき Wrangler が `wrangler.jsonc` に `database_id` を書き足しますが、コミットせずに戻して構いません。次からの反映も、同じ D1 につながります。fork して自分のアカウントで動かすときも、同じ手順で D1 ができます。
-
-### 2. GitHub App
+### 1. GitHub App
 
 組織 `funmary-app` の Settings の Developer settings から、GitHub App を作ります。
 
@@ -72,12 +67,14 @@ D1 は、初めての反映のときに Wrangler が作ります (`wrangler.json
 
 3. App を、対象のリポジトリ (`funmary-app/funmary` と、このリポジトリ) にインストールする
 
-### 3. Worker の秘密の値
+### 2. Worker の秘密の値と、最初の反映
+
+`pnpm exec wrangler login` でログインしてから、秘密の値を置きます。Worker がまだないときは、最初の `wrangler secret put` が「Worker を作るか」を聞くので、作ります (中身が空の Worker ができます)。
 
 ```sh
 pnpm exec wrangler secret put GITHUB_APP_ID           # App の ID (App の設定画面の上にある数字)
 pnpm exec wrangler secret put GITHUB_APP_PRIVATE_KEY  # key-pkcs8.pem の中身 (BEGIN PRIVATE KEY の行から END の行まで)
-pnpm exec wrangler secret put GITHUB_WEBHOOK_SECRET   # 2 の Webhook secret
+pnpm exec wrangler secret put GITHUB_WEBHOOK_SECRET   # 1 の Webhook secret
 pnpm exec wrangler secret put GITHUB_CLIENT_ID
 pnpm exec wrangler secret put GITHUB_CLIENT_SECRET
 pnpm exec wrangler secret put SIGNING_KEY             # 推測できない長い文字列 (openssl rand -hex 32 など)
@@ -85,7 +82,11 @@ pnpm exec wrangler secret put SIGNING_KEY             # 推測できない長い
 
 秘密鍵のファイル (`key-pkcs8.pem` とダウンロードした鍵) は、置いたら手元から消します。
 
-### 4. 自動の反映と、必須の検査
+6 つそろったら、`pnpm run deploy` で Worker と D1 のマイグレーションを反映します。
+
+D1 は、初めての反映のときに Wrangler が作ります (`wrangler.jsonc` に `database_id` は書きません)。そのとき Wrangler が `wrangler.jsonc` に `database_id` を書き足しますが、コミットせずに戻して構いません。次からの反映も、同じ D1 につながります。fork して自分のアカウントで動かすときも、同じ手順で D1 ができます。
+
+### 3. 自動の反映と、必須の検査
 
 1. Cloudflare で API トークンを作る (権限: Account の Workers Scripts: Edit と D1: Edit)
 2. このリポジトリの Settings で、環境 `production` を作り、secret の `CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` を置く。リポジトリの変数 (Variables) に `DEPLOY_ENABLED` (`true`) を置く。これで、main が変わるたびに反映される
