@@ -46,15 +46,15 @@ Worker の URL は `https://license-agreement.<アカウントのサブドメイ
 
 組織 `funmary-app` の Settings の Developer settings から、GitHub App を作ります。
 
-| 項目                                                   | 値                                                                                                                                                                       |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Redirect URI                                           | `<Worker の URL>/callback`                                                                                                                                               |
-| Request user authorization (OAuth) during installation | 外す                                                                                                                                                                     |
-| Webhook URL                                            | `<Worker の URL>/webhook`                                                                                                                                                |
-| Webhook secret                                         | 推測できない長い文字列 (`openssl rand -hex 32` など)                                                                                                                     |
-| Repository permissions                                 | Contents: Read-only (同意の文面とライセンスを読む)、Pull requests: Read-only、Issues: Read and write、Commit statuses: Read and write (Metadata: Read-only は自動で付く) |
-| Subscribe to events                                    | Pull request                                                                                                                                                             |
-| Where can this GitHub App be installed?                | Only on this account                                                                                                                                                     |
+| 項目                                                   | 値                                                                                                                                                                                                        |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Redirect URI                                           | `<Worker の URL>/callback`                                                                                                                                                                                |
+| Request user authorization (OAuth) during installation | 外す                                                                                                                                                                                                      |
+| Webhook URL                                            | `<Worker の URL>/webhook`                                                                                                                                                                                 |
+| Webhook secret                                         | 推測できない長い文字列 (`openssl rand -hex 32` など)                                                                                                                                                      |
+| Repository permissions                                 | Contents: Read-only (同意の文面とライセンスを読む)、Pull requests: Read and write (PR に案内のコメントを書く)、Issues: Read and write、Commit statuses: Read and write (Metadata: Read-only は自動で付く) |
+| Subscribe to events                                    | Pull request                                                                                                                                                                                              |
+| Where can this GitHub App be installed?                | Only on this account                                                                                                                                                                                      |
 
 作ったら、次を行います。
 
