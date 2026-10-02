@@ -37,12 +37,11 @@ interface PullRequestEvent {
 	readonly pull_request: {
 		readonly number: number;
 		readonly head: { readonly sha: string };
-		readonly author_association: string;
 		readonly user: { readonly id: number; readonly login: string; readonly type: string };
 	};
 }
 
-/** 外部の人の PR を見張るアクション。編集やラベルの付け外しでは、状態は変わらない */
+/** PR を見張るアクション。編集やラベルの付け外しでは、状態は変わらない */
 const WATCHED_ACTIONS = new Set(['opened', 'reopened', 'synchronize']);
 
 const INVALID_REPOSITORY = 'リポジトリの指定が正しくありません。';
@@ -78,10 +77,10 @@ export function createApp(deps: AppDeps): Hono {
 		const pull = event.pull_request;
 		const token = await deps.github.installationToken(repo);
 
-		if (isExempt({ type: pull.user.type, association: pull.author_association })) {
+		if (isExempt({ type: pull.user.type })) {
 			await deps.github.setStatus(token, repo, pull.head.sha, {
 				state: 'success',
-				description: 'メンテナーか Bot の PR なので、同意は要りません',
+				description: 'Bot の PR なので、同意は要りません',
 			});
 			return c.body(null, 204);
 		}

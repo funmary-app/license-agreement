@@ -1,15 +1,15 @@
 # license-agreement
 
-Funmary のリポジトリ (組織 [funmary-app](https://github.com/funmary-app)) で、外部の人 (リポジトリに書き込み権限のない人) の PR に、ライセンスへの同意を求める Cloudflare Worker です。
+Funmary のリポジトリ (組織 [funmary-app](https://github.com/funmary-app)) で、PR の作者に、ライセンスへの同意を求める Cloudflare Worker です。
 
-1. 外部の人が PR を開く (または push する) と、GitHub App の Webhook が届く
+1. だれかが PR を開く (または push する) と、GitHub App の Webhook が届く
 2. そのリポジトリでの同意の記録がなければ、PR に案内のコメント (同意のページへのリンク) を送り、検査「ライセンスへの同意」を「待ち」にする
 3. 作者が同意のページで GitHub にログインし、「同意する」を押すと、D1 に記録し、その人がそのリポジトリで開いている PR の検査を通す。そのあと、案内のコメントがあった PR のページに戻す
 
 - 同意は**リポジトリごとに 1 回**です。同じ人でも、別のリポジトリでは、もう一度同意を求めます
-- リポジトリの持ち主、組織のメンバー、共同作業者と、Bot (Renovate など) の PR には、同意を求めません
+- リポジトリの持ち主や組織のメンバーにも、ほかの人と同じく同意を求めます。求めないのは、Bot (Renovate など) の PR だけです
 - 記録は、リポジトリと人の ID で持ちます。リポジトリの名前を変えたり、移管したりしても、記録は切れません
-- 受け付けるのは、`wrangler.jsonc` の `ALLOWED_OWNERS` (カンマ区切り。今は `funmary-app`) の持ち主のリポジトリだけです。GitHub App は外部の人がログインできるように公開にするので、ほかの人が自分のリポジトリにインストールしても、そのリポジトリでは何もしません。fork して使うときは、自分の持ち主に替えます
+- 受け付けるのは、`wrangler.jsonc` の `ALLOWED_OWNERS` (カンマ区切り。今は `funmary-app`) の持ち主のリポジトリだけです。GitHub App は組織の外の人もログインできるように公開にするので、ほかの人が自分のリポジトリにインストールしても、そのリポジトリでは何もしません。fork して使うときは、自分の持ち主に替えます
 
 ## 同意してもらう文面
 
@@ -55,7 +55,7 @@ Worker の URL は `https://license-agreement.<アカウントのサブドメイ
 | Webhook secret                                         | 推測できない長い文字列 (`openssl rand -hex 32` など)                                                                                                                                                      |
 | Repository permissions                                 | Contents: Read-only (同意の文面とライセンスを読む)、Pull requests: Read and write (PR に案内のコメントを書く)、Issues: Read and write、Commit statuses: Read and write (Metadata: Read-only は自動で付く) |
 | Subscribe to events                                    | Pull request                                                                                                                                                                                              |
-| Where can this GitHub App be installed?                | Any account (外部の人がログインできるように、公開にする。ほかの持ち主のリポジトリは ALLOWED_OWNERS で断る)                                                                                                |
+| Where can this GitHub App be installed?                | Any account (組織の外の人もログインできるように、公開にする。ほかの持ち主のリポジトリは ALLOWED_OWNERS で断る)                                                                                            |
 
 作ったら、次を行います。
 
@@ -92,7 +92,7 @@ D1 は、初めての反映のときに Wrangler が作ります (`wrangler.json
 1. Cloudflare で API トークンを作る (権限: Account の Workers Scripts: Edit と D1: Edit)
 2. このリポジトリの Settings で、環境 `production` を作り、secret の `CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` を置く。リポジトリの変数 (Variables) に `DEPLOY_ENABLED` (`true`) を置く。これで、main が変わるたびに反映される
 3. 対象のリポジトリの ruleset の必須の検査に「ライセンスへの同意」を足す (送り元を、作った GitHub App に限る)
-4. 書き込み権限のない別のアカウントで試しに PR を開き、案内のコメントと同意の流れを確かめる
+4. 別のアカウントで試しに PR を開き、案内のコメントと同意の流れを確かめる
 
 ## Wrangler の後継 (cf CLI)
 
@@ -100,4 +100,4 @@ Cloudflare は Wrangler の後継の CLI「cf」をオープンベータで出�
 
 ## ライセンス
 
-BSD 3-Clause License ([LICENSE-BSD-3-CLAUSE](LICENSE-BSD-3-CLAUSE)) と Apache License, Version 2.0 ([LICENSE-APACHE-2.0](LICENSE-APACHE-2.0)) のデュアルライセンスです。外部の方の PR では、このリポジトリでも、初めての PR のときにライセンスへの同意をお願いしています。
+BSD 3-Clause License ([LICENSE-BSD-3-CLAUSE](LICENSE-BSD-3-CLAUSE)) と Apache License, Version 2.0 ([LICENSE-APACHE-2.0](LICENSE-APACHE-2.0)) のデュアルライセンスです。このリポジトリでも、初めての PR のときにライセンスへの同意をお願いしています。
