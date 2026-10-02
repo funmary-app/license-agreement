@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createAppJwt } from './github.ts';
+import { createAppJwt, createGitHubClient } from './github.ts';
 
 /** テスト用の RSA の鍵を作り、秘密鍵を PKCS#8 の PEM にする */
 async function generateKeyPair() {
@@ -43,5 +43,23 @@ describe('createAppJwt', () => {
 			new TextEncoder().encode(`${header}.${payload}`),
 		);
 		expect(valid).toBe(true);
+	});
+});
+
+describe('agreementText', () => {
+	it('GitHub が改行を入れて返す Base64 から、UTF-8 の文面を読む', async () => {
+		const text = '# 同意\n\nこのリポジトリに送る変更を、BSD 3-Clause License で出します。';
+		const base64 = btoa(String.fromCharCode(...new TextEncoder().encode(text)));
+		// 実際の応答と同じく 60 文字ごとに改行する。文字 s を含む Base64 で確かめる
+		const content = `${base64.match(/.{1,60}/g)?.join('\n') ?? ''}\n`;
+		expect(base64).toContain('s');
+		const client = createGitHubClient(
+			{ appId: '1', privateKey: '', clientId: '', clientSecret: '' },
+			() => Promise.resolve(Response.json({ content, sha: 'abc123' })),
+		);
+		await expect(client.agreementText('token', 'funmary-app/funmary')).resolves.toEqual({
+			body: text,
+			version: 'abc123',
+		});
 	});
 });
