@@ -10,7 +10,7 @@ import {
 	parsePullNumber,
 	requestComment,
 } from './agreement.ts';
-import type { GitHubClient } from './github.ts';
+import { GitHubError, type GitHubClient } from './github.ts';
 import { agreePage, confirmPage, donePage, errorPage } from './pages.ts';
 import { signToken, verifyToken, verifyWebhookSignature } from './signing.ts';
 import type { AgreementStore } from './store.ts';
@@ -47,10 +47,27 @@ const WATCHED_ACTIONS = new Set(['opened', 'reopened', 'synchronize']);
 const INVALID_REPOSITORY = 'リポジトリの指定が正しくありません。';
 const NOT_ALLOWED_REPOSITORY = 'このリポジトリでは、ライセンスへの同意を受け付けていません。';
 
+/** 受け付ける持ち主のリポジトリでも、App がまだ入っていなければ同意を受け付けられない */
+class NotInstalledError extends Error {
+	constructor(repo: string) {
+		super(`App が入っていません: ${repo}`);
+		this.name = 'NotInstalledError';
+	}
+}
+
 export function createApp(deps: AppDeps): Hono {
 	const app = new Hono();
 
 	const isAllowed = (repo: string) => isAllowedRepository(repo, deps.allowedOwners);
+
+	const installationToken = async (repo: string) => {
+		try {
+			return await deps.github.installationToken(repo);
+		} catch (error) {
+			if (error instanceof GitHubError && error.status === 404) throw new NotInstalledError(repo);
+			throw error;
+		}
+	};
 
 	/** 同意のページの URL。PR の番号を付けると、同意したあと、その PR のページに戻す */
 	const agreeUrl = (origin: string, repo: string, pull?: number) =>
@@ -75,7 +92,7 @@ export function createApp(deps: AppDeps): Hono {
 		const repo = event.repository.full_name;
 		if (!isAllowed(repo)) return c.body(null, 204);
 		const pull = event.pull_request;
-		const token = await deps.github.installationToken(repo);
+		const token = await installationToken(repo);
 
 		if (isExempt({ type: pull.user.type })) {
 			await deps.github.setStatus(token, repo, pull.head.sha, {
@@ -122,7 +139,7 @@ export function createApp(deps: AppDeps): Hono {
 		if (!isRepositoryName(repo)) return c.html(errorPage(INVALID_REPOSITORY), 400);
 		if (!isAllowed(repo)) return c.html(errorPage(NOT_ALLOWED_REPOSITORY), 404);
 		const pull = parsePullNumber(c.req.query('pr'));
-		const token = await deps.github.installationToken(repo);
+		const token = await installationToken(repo);
 		const text = await deps.github.agreementText(token, repo);
 		const loginUrl = `/login?repo=${encodeURIComponent(repo)}${pull === undefined ? '' : `&pr=${pull}`}`;
 		return c.html(agreePage({ repo, text, loginUrl }));
@@ -157,7 +174,7 @@ export function createApp(deps: AppDeps): Hono {
 			);
 		}
 		const user = await deps.github.currentUser(await deps.github.exchangeCode(code));
-		const token = await deps.github.installationToken(repo);
+		const token = await installationToken(repo);
 		const repository = await deps.github.repository(token, repo);
 		const text = await deps.github.agreementText(token, repo);
 		// 同意するのは、この画面で見せた版の文面。フォームの値に入れて署名する
@@ -218,7 +235,7 @@ export function createApp(deps: AppDeps): Hono {
 		});
 
 		// 同意した人が作った、そのリポジトリの開いている PR の検査を通す
-		const token = await deps.github.installationToken(repo);
+		const token = await installationToken(repo);
 		const pulls = await deps.github.openPullsBy(token, repo, userId);
 		for (const pull of pulls) {
 			await deps.github.setStatus(token, repo, pull.headSha, {
@@ -235,6 +252,7 @@ export function createApp(deps: AppDeps): Hono {
 	});
 
 	app.onError((error, c) => {
+		if (error instanceof NotInstalledError) return c.html(errorPage(NOT_ALLOWED_REPOSITORY), 404);
 		console.error(
 			JSON.stringify({ message: 'request failed', path: c.req.path, error: String(error) }),
 		);
