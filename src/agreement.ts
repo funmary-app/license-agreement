@@ -71,3 +71,26 @@ export function confirmedComment(login: string): string {
 export function isRepositoryName(value: string): boolean {
 	return /^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/.test(value);
 }
+
+/**
+ * 受け付けてよい持ち主 (組織かユーザー) のリポジトリか。GitHub の名前は大文字と小文字を区別しない。
+ * App を公開にすると、だれでも自分のリポジトリにインストールできるので、ほかの持ち主のものは断る
+ */
+export function isAllowedRepository(repo: string, allowedOwners: readonly string[]): boolean {
+	const owner = repo.split('/')[0]?.toLowerCase();
+	return allowedOwners.some((allowed) => allowed.toLowerCase() === owner);
+}
+
+/** カンマ区切りの持ち主の一覧 (Worker の変数 ALLOWED_OWNERS) を読む */
+export function parseAllowedOwners(value: string): string[] {
+	return value
+		.split(',')
+		.map((owner) => owner.trim())
+		.filter((owner) => owner !== '');
+}
+
+/** URL の引数の PR の番号を読む。正の整数でなければ undefined */
+export function parsePullNumber(value: string | undefined): number | undefined {
+	if (value === undefined || !/^[1-9][0-9]{0,9}$/.test(value)) return undefined;
+	return Number(value);
+}

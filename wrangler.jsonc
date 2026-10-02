@@ -5,6 +5,8 @@
 	"main": "src/index.ts",
 	"compatibility_date": "2026-10-02",
 	"workers_dev": true,
+	// 受け付けるリポジトリの持ち主 (組織かユーザー)。カンマで区切る。fork して使うときは、自分の持ち主に替える
+	"vars": { "ALLOWED_OWNERS": "funmary-app" },
 	"d1_databases": [
 		{
 			"binding": "DB",
