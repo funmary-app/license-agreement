@@ -43,8 +43,9 @@ pnpm build:check    # Cloudflare に送らずに、組み立てられるかを�
 ### 1. Cloudflare (アカウント funmary)
 
 1. `pnpm exec wrangler login` でログインする
-2. `pnpm exec wrangler d1 create funmary-license-agreement` で D1 を作り、表示された `database_id` を `wrangler.jsonc` に書く (秘密ではないので、コミットしてよい)
-3. `pnpm run deploy` で、マイグレーションと Worker を反映する。表示された URL を控える
+2. `pnpm run deploy` で、Worker と D1 のマイグレーションを反映する。表示された URL を控える
+
+D1 は、初めての反映のときに Wrangler が作ります (`wrangler.jsonc` に `database_id` は書きません)。そのとき Wrangler が `wrangler.jsonc` に `database_id` を書き足しますが、コミットせずに戻して構いません。次からの反映も、同じ D1 につながります。fork して自分のアカウントで動かすときも、同じ手順で D1 ができます。
 
 ### 2. GitHub App
 
