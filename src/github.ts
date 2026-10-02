@@ -151,7 +151,8 @@ export function createGitHubClient(
 					token,
 					`/repos/${repo}/contents/${AGREEMENT_FILE}`,
 				);
-				const bytes = Uint8Array.from(atob(file.content.replace(/s+/g, '')), (char) =>
+				// GitHub は Base64 を 60 文字ごとに改行して返す
+				const bytes = Uint8Array.from(atob(file.content.replace(/\s+/g, '')), (char) =>
 					char.charCodeAt(0),
 				);
 				return { body: new TextDecoder().decode(bytes).trim(), version: file.sha };

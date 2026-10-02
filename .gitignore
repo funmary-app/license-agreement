@@ -1,6 +1,19 @@
-.private/
+# 依存とビルドの出力
 node_modules/
 dist/
+
 # wrangler dev が手元に作る状態 (D1 の手元の DB など) と、手元の秘密の値
 .wrangler/
 .dev.vars
+
+# 公開しない資料と、各自の手元の指示
+.private/
+CLAUDE.local.md
+AGENTS.local.md
+
+# AI エージェントの手元の設定。公開するのは .agents/skills だけ
+.claude/
+.agent/
+.agents/*
+!.agents/skills/
+settings.local.json

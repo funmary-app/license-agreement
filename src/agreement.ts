@@ -42,11 +42,11 @@ export function defaultAgreementText(
 }
 
 /**
- * PR の作者に同意を求めなくてよいか。書き込み権限のある人 (author_association で判断する) と Bot は求めない。
- * author_association は GitHub の Webhook が付ける値 (OWNER、MEMBER、COLLABORATOR、CONTRIBUTOR、NONE など)
+ * PR の作者に同意を求めなくてよいか。Bot (Renovate など) だけ求めない。
+ * リポジトリの持ち主やメンバーにも、ほかの人と同じく、リポジトリごとに 1 回求める
  */
-export function isExempt(author: { readonly type: string; readonly association: string }): boolean {
-	return author.type === 'Bot' || ['OWNER', 'MEMBER', 'COLLABORATOR'].includes(author.association);
+export function isExempt(author: { readonly type: string }): boolean {
+	return author.type === 'Bot';
 }
 
 export function requestComment(login: string, repo: string, agreeUrl: string): string {
@@ -54,7 +54,7 @@ export function requestComment(login: string, repo: string, agreeUrl: string): s
 		MARKER,
 		`@${login} PR をありがとうございます。`,
 		'',
-		`${repo} では、外部の方から変更を受け取る前に、ライセンスへの同意をお願いしています (このリポジトリで 1 回です)。次のページで内容を確かめ、GitHub でログインして同意してください。同意すると、このコメントが書き換わり、検査「${STATUS_CONTEXT}」が通ります。`,
+		`${repo} では、変更を受け取る前に、ライセンスへの同意をお願いしています (このリポジトリで 1 回です)。次のページで内容を確かめ、GitHub でログインして同意してください。同意すると、このコメントが書き換わり、検査「${STATUS_CONTEXT}」が通ります。`,
 		'',
 		`- [ライセンスへの同意のページ](${agreeUrl})`,
 	].join('\n');
@@ -70,4 +70,27 @@ export function confirmedComment(login: string): string {
 /** owner/repo の形か (URL の引数から受け取る値を確かめる) */
 export function isRepositoryName(value: string): boolean {
 	return /^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/.test(value);
+}
+
+/**
+ * 受け付けてよい持ち主 (組織かユーザー) のリポジトリか。GitHub の名前は大文字と小文字を区別しない。
+ * App を公開にすると、だれでも自分のリポジトリにインストールできるので、ほかの持ち主のものは断る
+ */
+export function isAllowedRepository(repo: string, allowedOwners: readonly string[]): boolean {
+	const owner = repo.split('/')[0]?.toLowerCase();
+	return allowedOwners.some((allowed) => allowed.toLowerCase() === owner);
+}
+
+/** カンマ区切りの持ち主の一覧 (Worker の変数 ALLOWED_OWNERS) を読む */
+export function parseAllowedOwners(value: string): string[] {
+	return value
+		.split(',')
+		.map((owner) => owner.trim())
+		.filter((owner) => owner !== '');
+}
+
+/** URL の引数の PR の番号を読む。正の整数でなければ undefined */
+export function parsePullNumber(value: string | undefined): number | undefined {
+	if (value === undefined || !/^[1-9][0-9]{0,9}$/.test(value)) return undefined;
+	return Number(value);
 }

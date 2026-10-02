@@ -1,0 +1,40 @@
+name: 不具合の報告
+description: 同意のページが開けない、検査が通らない、案内のコメントが付かないなど
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        報告ありがとうございます。セキュリティ上の問題は、この Issue ではなく SECURITY.md の方法で知らせてください。
+        秘密の値 (トークン、鍵) や個人情報は書かないでください。
+  - type: textarea
+    id: what
+    attributes:
+      label: 起きたこと
+      description: 何をしたときに、何が起きたか
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待していた動き
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現の手順
+      placeholder: |
+        1. PR の案内のコメントのリンクを開く
+        2. 「GitHub でログインして、次へ」を押す
+        3. ...
+  - type: input
+    id: pull-request
+    attributes:
+      label: 関係する PR
+      placeholder: 例 funmary-app/funmary#123
+  - type: textarea
+    id: extra
+    attributes:
+      label: 補足
+      description: スクリーンショット (個人情報は伏せる) やエラーの文言など

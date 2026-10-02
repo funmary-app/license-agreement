@@ -1,0 +1,15 @@
+# gitleaks の設定。既定のルールに、除外する場所だけを足す
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "外部から取り込んだ AI エージェント向けのスキル。説明のための偽のトークンを含む"
+paths = ['''^\.agents/skills/''']
+
+[[allowlists]]
+description = "GitHub App の秘密鍵 (PEM) を読む処理と、そのテストがその場で作る鍵。本物の鍵は含まない"
+targetRules = ['private-key']
+paths = [
+  '''^src/github\.ts$''',
+  '''^src/github\.test\.ts$''',
+]

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MARKER } from './agreement.ts';
 import { createApp } from './app.ts';
-import type { GitHubClient } from './github.ts';
+import { GitHubError, type GitHubClient } from './github.ts';
 import { signToken } from './signing.ts';
 import type { AgreementKey, AgreementStore } from './store.ts';
 
@@ -18,7 +18,11 @@ const TEXT = {
 const keyOf = (key: AgreementKey) => `${key.repositoryId}:${key.githubUserId}:${key.version}`;
 
 function setup(
-	options: { agreed?: AgreementKey[]; pulls?: { number: number; headSha: string }[] } = {},
+	options: {
+		agreed?: AgreementKey[];
+		pulls?: { number: number; headSha: string }[];
+		installed?: boolean;
+	} = {},
 ) {
 	const calls: { method: string; args: unknown[] }[] = [];
 	const agreed = new Set((options.agreed ?? []).map(keyOf));
@@ -26,6 +30,9 @@ function setup(
 	const github: GitHubClient = {
 		installationToken: (repo) => {
 			calls.push({ method: 'installationToken', args: [repo] });
+			if (options.installed === false) {
+				return Promise.reject(new GitHubError(404, 'GitHub の API が 404 を返しました'));
+			}
 			return Promise.resolve('installation-token');
 		},
 		repository: (_token, repo) => Promise.resolve({ id: REPO_ID, fullName: repo }),
@@ -58,6 +65,7 @@ function setup(
 		signingKey: 'signing-key',
 		webhookSecret: WEBHOOK_SECRET,
 		clientId: 'client-id',
+		allowedOwners: ['funmary-app'],
 		now: () => NOW,
 	});
 	return { app, calls, records };
@@ -77,11 +85,17 @@ async function sign(body: string): Promise<string> {
 }
 
 function pullRequestEvent(
-	overrides: { action?: string; association?: string; type?: string; repositoryId?: number } = {},
+	overrides: {
+		action?: string;
+		association?: string;
+		type?: string;
+		repositoryId?: number;
+		repo?: string;
+	} = {},
 ) {
 	return JSON.stringify({
 		action: overrides.action ?? 'opened',
-		repository: { id: overrides.repositoryId ?? REPO_ID, full_name: REPO },
+		repository: { id: overrides.repositoryId ?? REPO_ID, full_name: overrides.repo ?? REPO },
 		pull_request: {
 			number: 7,
 			head: { sha: 'abc123' },
@@ -111,7 +125,7 @@ describe('Webhook', () => {
 		expect(calls).toEqual([]);
 	});
 
-	it('外部の人がまだ同意していなければ、案内のコメントを送り、検査を「待ち」にして、同意のページへつなぐ', async () => {
+	it('まだ同意していなければ、案内のコメントを送り、検査を「待ち」にして、同意のページへつなぐ', async () => {
 		const { app, calls } = setup();
 		expect((await webhook(app, pullRequestEvent())).status).toBe(204);
 		const comment = calls.find((call) => call.method === 'upsertComment');
@@ -123,7 +137,7 @@ describe('Webhook', () => {
 			{
 				state: 'pending',
 				description: 'PR の作者の、ライセンスへの同意を待っています',
-				targetUrl: `${ORIGIN}/agree?repo=funmary-app%2Ffunmary`,
+				targetUrl: `${ORIGIN}/agree?repo=funmary-app%2Ffunmary&pr=7`,
 			},
 		]);
 	});
@@ -154,21 +168,30 @@ describe('Webhook', () => {
 		}
 	});
 
-	it('メンバーと Bot の PR は、同意を求めずに検査を通す', async () => {
-		for (const event of [
-			pullRequestEvent({ association: 'MEMBER' }),
-			pullRequestEvent({ type: 'Bot', association: 'NONE' }),
-		]) {
-			const { app, calls } = setup();
-			await webhook(app, event);
-			expect(calls.map((call) => call.method)).toEqual(['installationToken', 'setStatus']);
-		}
+	it('Bot の PR は、同意を求めずに検査を通す', async () => {
+		const { app, calls } = setup();
+		await webhook(app, pullRequestEvent({ type: 'Bot' }));
+		expect(calls.map((call) => call.method)).toEqual(['installationToken', 'setStatus']);
+	});
+
+	it('リポジトリの持ち主やメンバーの PR でも、まだ同意していなければ、同意を求める', async () => {
+		const { app, calls } = setup();
+		await webhook(app, pullRequestEvent({ association: 'OWNER' }));
+		expect(calls.find((call) => call.method === 'setStatus')?.args[2]).toMatchObject({
+			state: 'pending',
+		});
 	});
 
 	it('見張らないアクションとイベントでは、何もしない', async () => {
 		const { app, calls } = setup();
 		await webhook(app, pullRequestEvent({ action: 'labeled' }));
 		await webhook(app, '{}', 'ping');
+		expect(calls).toEqual([]);
+	});
+
+	it('受け付ける持ち主のものでないリポジトリでは、何もしない (App を公開にしても、ほかの人のリポジトリでは動かない)', async () => {
+		const { app, calls } = setup();
+		expect((await webhook(app, pullRequestEvent({ repo: 'someone/fork' }))).status).toBe(204);
 		expect(calls).toEqual([]);
 	});
 });
@@ -182,6 +205,23 @@ describe('同意のページ', () => {
 		const page = await response.text();
 		expect(page).toContain('&lt;b&gt;太字にしない&lt;/b&gt;');
 		expect(page).not.toContain('<b>太字にしない</b>');
+	});
+
+	it('受け付ける持ち主のものでないリポジトリは、404 を返す', async () => {
+		const { app, calls } = setup();
+		for (const path of ['/agree?repo=someone/fork', '/login?repo=someone/fork']) {
+			expect((await app.request(`${ORIGIN}${path}`)).status).toBe(404);
+		}
+		expect(calls).toEqual([]);
+		// 大文字と小文字は区別しない
+		expect((await app.request(`${ORIGIN}/agree?repo=Funmary-App/funmary`)).status).toBe(200);
+	});
+
+	it('App がまだ入っていないリポジトリは、500 ではなく 404 を返し、受け付けていないことを伝える', async () => {
+		const { app } = setup({ installed: false });
+		const response = await app.request(`${ORIGIN}/agree?repo=funmary-app/new-repository`);
+		expect(response.status).toBe(404);
+		expect(await response.text()).toContain('ライセンスへの同意を受け付けていません');
 	});
 
 	it('ログインでは、署名した state を付けて GitHub の認可の画面へ送り、戻ってきたら確認の画面を出す', async () => {
@@ -242,5 +282,36 @@ describe('同意のページ', () => {
 			REPO,
 			'abc123',
 		]);
+	});
+
+	it('案内のリンクに PR の番号があれば、ログインと確認の画面を通して引き継ぎ、同意したらその PR のページに戻す', async () => {
+		const { app } = setup();
+		const agree = await (await app.request(`${ORIGIN}/agree?repo=${REPO}&pr=250`)).text();
+		expect(agree).toContain(`/login?repo=funmary-app%2Ffunmary&amp;pr=250`);
+
+		const login = await app.request(`${ORIGIN}/login?repo=${REPO}&pr=250`);
+		const state = new URL(login.headers.get('Location') ?? '').searchParams.get('state') ?? '';
+		const confirm = await (await app.request(`${ORIGIN}/callback?code=c1&state=${state}`)).text();
+		const token = /name="token" value="([^"]+)"/.exec(confirm)?.[1] ?? '';
+
+		const data = new FormData();
+		data.set('token', token);
+		const response = await app.request(`${ORIGIN}/agree`, {
+			method: 'POST',
+			body: data,
+			headers: { Origin: ORIGIN },
+		});
+		expect(response.status).toBe(303);
+		expect(response.headers.get('Location')).toBe(
+			'https://github.com/funmary-app/funmary/pull/250',
+		);
+	});
+
+	it('PR の番号が正の整数でなければ、無視する', async () => {
+		const { app } = setup();
+		for (const pr of ['0', '-1', '1e3', 'abc', '12345678901']) {
+			const agree = await (await app.request(`${ORIGIN}/agree?repo=${REPO}&pr=${pr}`)).text();
+			expect(agree).toContain('/login?repo=funmary-app%2Ffunmary"');
+		}
 	});
 });

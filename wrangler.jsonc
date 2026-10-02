@@ -1,16 +1,17 @@
 {
 	// 外部の人の PR で、ライセンスへの同意を求める Worker。URL は workers.dev (本番のドメインを公開しない)
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "funmary-license-agreement",
+	"name": "license-agreement",
 	"main": "src/index.ts",
 	"compatibility_date": "2026-10-02",
 	"workers_dev": true,
+	// 受け付けるリポジトリの持ち主 (組織かユーザー)。カンマで区切る。fork して使うときは、自分の持ち主に替える
+	"vars": { "ALLOWED_OWNERS": "funmary-app" },
 	"d1_databases": [
 		{
 			"binding": "DB",
+			// database_id は書かない。wrangler deploy が、この名前の D1 を探してつなぎ、なければ作る
 			"database_name": "funmary-license-agreement",
-			// wrangler d1 create funmary-license-agreement で作った ID に置き換える (秘密ではない)
-			"database_id": "00000000-0000-0000-0000-000000000000",
 			"migrations_dir": "migrations",
 		},
 	],
