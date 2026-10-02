@@ -10,7 +10,7 @@
 	},
 	"scripts": {
 		"dev": "wrangler dev",
-		"deploy": "wrangler d1 migrations apply DB --remote && wrangler deploy",
+		"deploy": "wrangler deploy && wrangler d1 migrations apply DB --remote",
 		"types": "wrangler types",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
