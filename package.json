@@ -1,0 +1,30 @@
+{
+	"name": "license-agreement",
+	"private": true,
+	"type": "module",
+	"description": "Funmary のリポジトリで、外部の人の PR にライセンスへの同意を求める Cloudflare Worker",
+	"license": "(BSD-3-Clause OR Apache-2.0)",
+	"packageManager": "pnpm@11.22.0",
+	"engines": {
+		"node": ">=24 <25"
+	},
+	"scripts": {
+		"dev": "wrangler dev",
+		"deploy": "wrangler d1 migrations apply DB --remote && wrangler deploy",
+		"types": "wrangler types",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"build:check": "wrangler deploy --dry-run --outdir dist"
+	},
+	"dependencies": {
+		"hono": "^4.13.9"
+	},
+	"devDependencies": {
+		"prettier": "^3.9.9",
+		"typescript": "^7.0.2",
+		"vitest": "^5.0.1",
+		"wrangler": "^4.140.0"
+	}
+}

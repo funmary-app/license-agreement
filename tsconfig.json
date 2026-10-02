@@ -1,0 +1,19 @@
+{
+	// Worker のコードと、そのテストを検査する。Worker の型は wrangler types が作った worker-configuration.d.ts から取る
+	"compilerOptions": {
+		"target": "es2024",
+		"lib": ["es2024"],
+		"module": "preserve",
+		"moduleResolution": "bundler",
+		"verbatimModuleSyntax": true,
+		"allowImportingTsExtensions": true,
+		"noEmit": true,
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"exactOptionalPropertyTypes": true,
+		"isolatedModules": true,
+		"skipLibCheck": true,
+		"types": []
+	},
+	"include": ["worker-configuration.d.ts", "src/**/*"]
+}
