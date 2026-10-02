@@ -48,7 +48,7 @@ Worker の URL は `https://license-agreement.<アカウントのサブドメイ
 
 | 項目                                                   | 値                                                                                                                                                                       |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Callback URL                                           | `<Worker の URL>/callback`                                                                                                                                               |
+| Redirect URI                                           | `<Worker の URL>/callback`                                                                                                                                               |
 | Request user authorization (OAuth) during installation | 外す                                                                                                                                                                     |
 | Webhook URL                                            | `<Worker の URL>/webhook`                                                                                                                                                |
 | Webhook secret                                         | 推測できない長い文字列 (`openssl rand -hex 32` など)                                                                                                                     |
