@@ -4,11 +4,12 @@ Funmary のリポジトリ (組織 [funmary-app](https://github.com/funmary-app)
 
 1. 外部の人が PR を開く (または push する) と、GitHub App の Webhook が届く
 2. そのリポジトリでの同意の記録がなければ、PR に案内のコメント (同意のページへのリンク) を送り、検査「ライセンスへの同意」を「待ち」にする
-3. 作者が同意のページで GitHub にログインし、「同意する」を押すと、D1 に記録し、その人がそのリポジトリで開いている PR の検査を通す
+3. 作者が同意のページで GitHub にログインし、「同意する」を押すと、D1 に記録し、その人がそのリポジトリで開いている PR の検査を通す。そのあと、案内のコメントがあった PR のページに戻す
 
 - 同意は**リポジトリごとに 1 回**です。同じ人でも、別のリポジトリでは、もう一度同意を求めます
 - リポジトリの持ち主、組織のメンバー、共同作業者と、Bot (Renovate など) の PR には、同意を求めません
 - 記録は、リポジトリと人の ID で持ちます。リポジトリの名前を変えたり、移管したりしても、記録は切れません
+- 受け付けるのは、`wrangler.jsonc` の `ALLOWED_OWNERS` (カンマ区切り。今は `funmary-app`) の持ち主のリポジトリだけです。GitHub App は外部の人がログインできるように公開にするので、ほかの人が自分のリポジトリにインストールしても、そのリポジトリでは何もしません。fork して使うときは、自分の持ち主に替えます
 
 ## 同意してもらう文面
 
@@ -54,7 +55,7 @@ Worker の URL は `https://license-agreement.<アカウントのサブドメイ
 | Webhook secret                                         | 推測できない長い文字列 (`openssl rand -hex 32` など)                                                                                                                                                      |
 | Repository permissions                                 | Contents: Read-only (同意の文面とライセンスを読む)、Pull requests: Read and write (PR に案内のコメントを書く)、Issues: Read and write、Commit statuses: Read and write (Metadata: Read-only は自動で付く) |
 | Subscribe to events                                    | Pull request                                                                                                                                                                                              |
-| Where can this GitHub App be installed?                | Only on this account                                                                                                                                                                                      |
+| Where can this GitHub App be installed?                | Any account (外部の人がログインできるように、公開にする。ほかの持ち主のリポジトリは ALLOWED_OWNERS で断る)                                                                                                |
 
 作ったら、次を行います。
 
