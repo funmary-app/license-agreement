@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MARKER } from './agreement.ts';
 import { createApp } from './app.ts';
-import type { GitHubClient } from './github.ts';
+import { GitHubError, type GitHubClient } from './github.ts';
 import { signToken } from './signing.ts';
 import type { AgreementKey, AgreementStore } from './store.ts';
 
@@ -18,7 +18,11 @@ const TEXT = {
 const keyOf = (key: AgreementKey) => `${key.repositoryId}:${key.githubUserId}:${key.version}`;
 
 function setup(
-	options: { agreed?: AgreementKey[]; pulls?: { number: number; headSha: string }[] } = {},
+	options: {
+		agreed?: AgreementKey[];
+		pulls?: { number: number; headSha: string }[];
+		installed?: boolean;
+	} = {},
 ) {
 	const calls: { method: string; args: unknown[] }[] = [];
 	const agreed = new Set((options.agreed ?? []).map(keyOf));
@@ -26,6 +30,9 @@ function setup(
 	const github: GitHubClient = {
 		installationToken: (repo) => {
 			calls.push({ method: 'installationToken', args: [repo] });
+			if (options.installed === false) {
+				return Promise.reject(new GitHubError(404, 'GitHub の API が 404 を返しました'));
+			}
 			return Promise.resolve('installation-token');
 		},
 		repository: (_token, repo) => Promise.resolve({ id: REPO_ID, fullName: repo }),
@@ -208,6 +215,13 @@ describe('同意のページ', () => {
 		expect(calls).toEqual([]);
 		// 大文字と小文字は区別しない
 		expect((await app.request(`${ORIGIN}/agree?repo=Funmary-App/funmary`)).status).toBe(200);
+	});
+
+	it('App がまだ入っていないリポジトリは、500 ではなく 404 を返し、受け付けていないことを伝える', async () => {
+		const { app } = setup({ installed: false });
+		const response = await app.request(`${ORIGIN}/agree?repo=funmary-app/new-repository`);
+		expect(response.status).toBe(404);
+		expect(await response.text()).toContain('ライセンスへの同意を受け付けていません');
 	});
 
 	it('ログインでは、署名した state を付けて GitHub の認可の画面へ送り、戻ってきたら確認の画面を出す', async () => {
