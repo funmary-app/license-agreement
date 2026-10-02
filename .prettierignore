@@ -3,3 +3,6 @@ LICENSE-*
 worker-configuration.d.ts
 .wrangler/
 dist/
+skills-lock.json
+.agents/
+.private/
