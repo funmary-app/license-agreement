@@ -10,7 +10,7 @@ throw new Error('Migration incomplete. Resolve every cf migrate TODO in `cloudfl
 
 export default defineConfig({
 	worker: {
-		name: 'funmary-license-agreement',
+		name: 'license-agreement',
 		compatibilityDate: '2026-10-02',
 		entrypoint: 'src/index.ts',
 		workersDev: true,
@@ -20,6 +20,7 @@ export default defineConfig({
 				enabled: true,
 			},
 		},
+		// TODO: wrangler.jsonc の vars の ALLOWED_OWNERS ('funmary-app') を移す。cf での書き方を確かめてから
 		env: {
 			GITHUB_APP_ID: bindings.secret(),
 			GITHUB_APP_PRIVATE_KEY: bindings.secret(),
@@ -29,6 +30,7 @@ export default defineConfig({
 			SIGNING_KEY: bindings.secret(),
 			DB: bindings.d1({
 				name: 'funmary-license-agreement',
+				// TODO: wrangler.jsonc では id を書かず、反映のときに名前で探してつなぐ。cf で同じことができるかを確かめる
 				id: '00000000-0000-0000-0000-000000000000',
 			}),
 		},
