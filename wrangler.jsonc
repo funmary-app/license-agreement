@@ -1,7 +1,7 @@
 {
 	// 外部の人の PR で、ライセンスへの同意を求める Worker。URL は workers.dev (本番のドメインを公開しない)
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "funmary-license-agreement",
+	"name": "license-agreement",
 	"main": "src/index.ts",
 	"compatibility_date": "2026-10-02",
 	"workers_dev": true,
