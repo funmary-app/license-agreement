@@ -5,4 +5,4 @@ funmary-app/license-agreement に送る変更 (コード、文書など) を、B
 ライセンスの本文:
 
 - https://github.com/funmary-app/license-agreement/blob/main/LICENSE-BSD-3-CLAUSE
-- https://github.com/funmary-app/license-agreement/blob/main/LICENSE-APACHE-2.0
+- https://github.com/funmary-app/license-agreement/blob/main/LICENSE-APACHE
