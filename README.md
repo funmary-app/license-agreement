@@ -104,4 +104,4 @@ Cloudflare は Wrangler の後継の CLI「cf」をオープンベータで出�
 
 ## ライセンス
 
-BSD 3-Clause License ([LICENSE-BSD-3-CLAUSE](LICENSE-BSD-3-CLAUSE)) と Apache License, Version 2.0 ([LICENSE-APACHE-2.0](LICENSE-APACHE-2.0)) のデュアルライセンスです。このリポジトリでも、初めての PR のときにライセンスへの同意をお願いしています ([CONTRIBUTING.md](CONTRIBUTING.md))。
+BSD 3-Clause License ([LICENSE-BSD-3-CLAUSE](LICENSE-BSD-3-CLAUSE)) と Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE)) のデュアルライセンスです。このリポジトリでも、初めての PR のときにライセンスへの同意をお願いしています ([CONTRIBUTING.md](CONTRIBUTING.md))。
